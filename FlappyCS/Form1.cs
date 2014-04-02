@@ -11,23 +11,26 @@ namespace FlappyCS
 {
     public partial class Form1 : Form
     {
-        delegate void UpdateFormCallback();
+        private delegate void UpdateFormCallback();
         //Game Object Declarations.
-        Player p1;
-        Thread updateThread;
-        Thread FPSThread;
-        Thread CountDownThread;
-        bool paused = false;
-        bool once = false;
-        bool gameover = false;
-        int countdown = 4;
+        private Player p1;
 
-        Font fnt = new Font("Arial", (float)23, FontStyle.Italic | FontStyle.Bold);
-        Font smfnt = new Font("Arial", (float)9, FontStyle.Italic | FontStyle.Bold);
+        private Thread updateThread;
+        private Thread FPSThread;
+        private Thread CountDownThread;
+
+        private bool paused = false;
+        private bool once = false;
+        private bool gameover = false;
+        private int countdown = 4;
+
+        //fonts
+        private Font fnt = new Font("Arial", (float)23, FontStyle.Italic | FontStyle.Bold);
+        private Font smfnt = new Font("Arial", (float)9, FontStyle.Italic | FontStyle.Bold);
 
         //fps
-        int FPSt = 0;
-        int FPSCount = 0;
+        private int FPSt = 0;
+        private int FPSCount = 0;
 
         public Form1()
         {
@@ -100,18 +103,21 @@ namespace FlappyCS
             FPSt++;
             if (p1.Instance != null)
             {
-                if (p1.CheckCollision())
-                {
-                    //game over.
-                    EndGame();
-                }
-                p1.OldLocation = p1.Location;
                 p1.PaintPlayer(e.Graphics);
                 p1.PaintObstacles(e.Graphics);
                 e.Graphics.FillRectangle(new SolidBrush(Color.DimGray), new Rectangle(-1, -1, 75, 25));
                 e.Graphics.DrawRectangle(Pens.Black, new Rectangle(-1, -1, 75, 25));
                 e.Graphics.DrawString(string.Format("Score: {0}", p1.Score.ToString()), smfnt, new SolidBrush(Color.White), new PointF(8, 5));
                 e.Graphics.DrawString(string.Format("FPS: {0}", FPSCount), smfnt, new SolidBrush(Color.Black), new PointF(this.Width - 70, 0));
+                //fixed collision check
+                if (p1.CheckCollision())
+                {
+                    //game over.
+                    EndGame();
+                }
+
+                p1.OldLocation = p1.Location;
+
                 if (countdown > 0)
                 {
                     //draw new countdown.
@@ -154,7 +160,8 @@ namespace FlappyCS
             }
             if (e.KeyCode == Keys.Space && p1.Instance != null && p1.Active)
             {
-                p1.Location.Y -= 75;
+                p1.heightPoller += 80; //switched to smooth jumping. uncomment below line and comment out this one to go back to old jumping
+                //p1.Location.Y -= 75;
                 p1.Rotation = 45;
                 //this.Refresh();
             }
@@ -181,7 +188,9 @@ namespace FlappyCS
         {
             if (p1.Instance != null && p1.Active)
             {
-                p1.Location.Y -= 75;
+                //instead store height poller
+                p1.heightPoller += 80;
+                //p1.Location.Y -= 75;
                 p1.Rotation = 45;
             }
         }
@@ -195,13 +204,20 @@ namespace FlappyCS
         public float Rotation = 0;
         public bool Active = false;
         public int Score = 0;
+        public int heightPoller = 0;
 
         private float fallingRotation = 0;
+        private float fallingSpeed = 0;
+
         private Matrix matrix = new Matrix();
         private Point maxSize;
         private Rectangle topBox;
         private Rectangle lowerBox;
+        private Rectangle topBox2;
+        private Rectangle lowerBox2;
         private Graphics p;
+        private Bitmap graphics;
+
         public Player(Point MaxSize)
         {
             maxSize = new Point(MaxSize.Y - 38, MaxSize.X - 5);
@@ -209,28 +225,45 @@ namespace FlappyCS
             graphics = new Bitmap(34, 34);
             p = Graphics.FromImage(graphics);
             topBox = new Rectangle(new Point(maxSize.X - 64, -1), new Size(64, r.Next(128, 320)));
-            lowerBox = new Rectangle(new Point(maxSize.X- 64, topBox.Height + 128), new Size(64, maxSize.Y - topBox.Height + 300));
+            lowerBox = new Rectangle(new Point(maxSize.X - 64, topBox.Height + 128), new Size(64, maxSize.Y - topBox.Height + 300));
+            topBox2 = new Rectangle(new Point(maxSize.X + (maxSize.X / 2) - 64, -1), new Size(64, r.Next(128, 320)));
+            lowerBox2 = new Rectangle(new Point(maxSize.X + (maxSize.X / 2) - 64, topBox2.Height + 128), new Size(64, maxSize.Y - topBox2.Height + 300));
         }
 
-        Bitmap graphics;
+        
         public void PaintPlayer(Graphics e)
         {
             p.Clear(Form.DefaultBackColor);
-            if(Active) Location.Y += 2;
+            if (Active)
+            {
+                fallingSpeed += (float)0.08;
+                Location.Y += (int)(2 * fallingSpeed);
+                //ADD MOMENTUM
+
+            }
             Size rectangleSize = new Size(this.Instance.Width / 2, this.Instance.Height / 2);
             Size margin = new Size((this.Instance.Width - rectangleSize.Width) / 2, (this.Instance.Height - rectangleSize.Height) / 2);
-            // Rotate about the center of the control
-            matrix = new Matrix();
+            
+            matrix = new Matrix();            
+            if (heightPoller > 0 && Active)
+            {
+                //smooth jumping
+                Location.Y -= 8;
+                heightPoller -= 8;
+                fallingSpeed = 0;
+            }
             if (Rotation > 0)
             {
                 fallingRotation = 0;
                 matrix.RotateAt(Rotation - (Rotation * 2), new PointF(Instance.Left + ((float)Instance.Width / 2), Instance.Top + ((float)Instance.Height / 2)), MatrixOrder.Append);
-                Rotation -= 5;
+                if(Active)
+                Rotation -= (float)1;
             }
             else
             {
+                if (fallingRotation == 0) fallingRotation += (float)0.5;
                 matrix.RotateAt(fallingRotation, new PointF(Instance.Left + ((float)Instance.Width / 2), Instance.Top + ((float)Instance.Height / 2)), MatrixOrder.Append);
-                if(fallingRotation < 35)
+                if(fallingRotation < 35 && fallingRotation != 0 && Active)
                     fallingRotation += (float)0.5;
             }
             p.Transform = matrix;
@@ -247,11 +280,18 @@ namespace FlappyCS
             {
                 topBox.X -= 2;
                 lowerBox.X -= 2;
+                topBox2.X -= 2;
+                lowerBox2.X -= 2;
             }
             e.FillRectangle(new SolidBrush(Color.Orange), topBox);
             e.FillRectangle(new SolidBrush(Color.Orange), lowerBox);
             e.DrawRectangle(Pens.Black, topBox);
             e.DrawRectangle(Pens.Black, lowerBox);
+
+            e.FillRectangle(new SolidBrush(Color.LimeGreen), topBox2);
+            e.FillRectangle(new SolidBrush(Color.LimeGreen), lowerBox2);
+            e.DrawRectangle(Pens.Black, topBox2);
+            e.DrawRectangle(Pens.Black, lowerBox2);
             //calculate where they should be at, start at the max length of the form.
             if (topBox.X <= -64)
             {
@@ -270,8 +310,32 @@ namespace FlappyCS
                 lowerBox.Y = topBox.Height + 128;
                 //new Rectangle(new Point(maxSize.X, topBox.Height + 128), new Size(64, maxSize.Y - topBox.Height + 300));
             }
+
+            if (topBox2.X <= -64)
+            {
+                //update.
+                //+1 point.
+                scoreGiven = false;
+                topBox2.X = maxSize.X;
+                topBox2.Height = r.Next(90, 350);
+                //new Rectangle(new Point(maxSize.X, -1), new Size(64, r.Next(90, 350)));
+            }
+
+            if (lowerBox2.X <= -64)
+            {
+                lowerBox2.X = maxSize.X;
+                lowerBox2.Height = maxSize.Y - topBox2.Height + 300;
+                lowerBox2.Y = topBox2.Height + 128;
+                //new Rectangle(new Point(maxSize.X, topBox.Height + 128), new Size(64, maxSize.Y - topBox.Height + 300));
+            }
+            
             //check score.
             if (Location.X > topBox.X + topBox.Width && !scoreGiven)
+            {
+                Score++;
+                scoreGiven = true;
+            }
+            if (Location.X > topBox2.X + topBox2.Width && !scoreGiven)
             {
                 Score++;
                 scoreGiven = true;
@@ -297,6 +361,18 @@ namespace FlappyCS
                 return true;
             }
             if (lowerBox.IntersectsWith(collide))
+            {
+                Active = false;
+                fallingRotation = 0;
+                return true;
+            }
+            if (topBox2.IntersectsWith(collide))
+            {
+                Active = false;
+                fallingRotation = 0;
+                return true;
+            }
+            if (lowerBox2.IntersectsWith(collide))
             {
                 Active = false;
                 fallingRotation = 0;
