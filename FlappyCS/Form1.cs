@@ -218,6 +218,21 @@ namespace FlappyCS
         private Graphics p;
         private Bitmap graphics;
 
+        private static List<Color> colors = new List<Color>()
+        {
+            Color.Purple,
+            Color.Salmon,
+            Color.RosyBrown,
+            Color.PowderBlue,
+            Color.Orange,
+            Color.DarkOrange,
+            Color.DarkGreen,
+            Color.Magenta,
+            Color.Lime,
+            Color.LightSlateGray,
+            Color.OrangeRed
+        };
+
         public Player(Point MaxSize)
         {
             maxSize = new Point(MaxSize.Y - 38, MaxSize.X - 5);
@@ -267,12 +282,17 @@ namespace FlappyCS
                     fallingRotation += (float)0.5;
             }
             p.Transform = matrix;
-            p.FillRectangle(new SolidBrush(Color.Blue), Instance);
+            p.FillRectangle(new SolidBrush(Color.DarkCyan), Instance);
             p.DrawRectangle(Pens.Black, Instance);
             e.DrawImage(graphics, Location);
         }
-        Random r = new Random(Environment.TickCount);
-        bool scoreGiven = false;
+        private static Random r = new Random(Environment.TickCount);
+
+        private bool scoreGiven = false;
+
+        private Color currentColor = colors[r.Next(0, colors.Count - 1)];
+        private Color currentColor2 = colors[r.Next(0, colors.Count - 1)];
+
         public void PaintObstacles(Graphics e)
         {
             //move Rectangles.
@@ -283,13 +303,13 @@ namespace FlappyCS
                 topBox2.X -= 2;
                 lowerBox2.X -= 2;
             }
-            e.FillRectangle(new SolidBrush(Color.Orange), topBox);
-            e.FillRectangle(new SolidBrush(Color.Orange), lowerBox);
+            e.FillRectangle(new SolidBrush(currentColor), topBox);
+            e.FillRectangle(new SolidBrush(currentColor), lowerBox);
             e.DrawRectangle(Pens.Black, topBox);
             e.DrawRectangle(Pens.Black, lowerBox);
 
-            e.FillRectangle(new SolidBrush(Color.LimeGreen), topBox2);
-            e.FillRectangle(new SolidBrush(Color.LimeGreen), lowerBox2);
+            e.FillRectangle(new SolidBrush(currentColor2), topBox2);
+            e.FillRectangle(new SolidBrush(currentColor2), lowerBox2);
             e.DrawRectangle(Pens.Black, topBox2);
             e.DrawRectangle(Pens.Black, lowerBox2);
             //calculate where they should be at, start at the max length of the form.
@@ -300,6 +320,7 @@ namespace FlappyCS
                 scoreGiven = false;
                 topBox.X = maxSize.X;
                 topBox.Height = r.Next(90, 350);
+                currentColor = colors[r.Next(0, colors.Count - 1)];
                 //new Rectangle(new Point(maxSize.X, -1), new Size(64, r.Next(90, 350)));
             }
 
@@ -319,6 +340,7 @@ namespace FlappyCS
                 topBox2.X = maxSize.X;
                 topBox2.Height = r.Next(90, 350);
                 //new Rectangle(new Point(maxSize.X, -1), new Size(64, r.Next(90, 350)));
+                currentColor2 = colors[r.Next(0, colors.Count - 1)];
             }
 
             if (lowerBox2.X <= -64)
