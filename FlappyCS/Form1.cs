@@ -162,7 +162,7 @@ namespace FlappyCS
             {
                 p1.heightPoller += 80; //switched to smooth jumping. uncomment below line and comment out this one to go back to old jumping
                 //p1.Location.Y -= 75;
-                p1.Rotation = 45;
+                //p1.Rotation = 35;
                 //this.Refresh();
             }
             else if (e.KeyCode == Keys.Q)
@@ -176,7 +176,7 @@ namespace FlappyCS
                 p1.Active = true;
                 paused = false;
             }
-            else if (e.KeyCode == Keys.P)
+            else if (e.KeyCode == Keys.P && p1.Active)
             {
                 //pause game.
                 p1.Active = !p1.Active;
@@ -191,7 +191,7 @@ namespace FlappyCS
                 //instead store height poller
                 p1.heightPoller += 80;
                 //p1.Location.Y -= 75;
-                p1.Rotation = 45;
+                
             }
         }
 
@@ -254,32 +254,35 @@ namespace FlappyCS
                 fallingSpeed += (float)0.08;
                 Location.Y += (int)(2 * fallingSpeed);
                 //ADD MOMENTUM
-
             }
             Size rectangleSize = new Size(this.Instance.Width / 2, this.Instance.Height / 2);
             Size margin = new Size((this.Instance.Width - rectangleSize.Width) / 2, (this.Instance.Height - rectangleSize.Height) / 2);
             
-            matrix = new Matrix();            
+            matrix = new Matrix();      
             if (heightPoller > 0 && Active)
             {
                 //smooth jumping
                 Location.Y -= 8;
                 heightPoller -= 8;
                 fallingSpeed = 0;
+                if(Rotation <= 0)
+                    Rotation = 1;
             }
             if (Rotation > 0)
             {
                 fallingRotation = 0;
                 matrix.RotateAt(Rotation - (Rotation * 2), new PointF(Instance.Left + ((float)Instance.Width / 2), Instance.Top + ((float)Instance.Height / 2)), MatrixOrder.Append);
-                if(Active)
-                Rotation -= (float)1;
+                if (Active && heightPoller <= 0)
+                    Rotation--;
+                else if(Rotation < 30)
+                    Rotation+= 2;
             }
             else
             {
                 if (fallingRotation == 0) fallingRotation += (float)0.5;
                 matrix.RotateAt(fallingRotation, new PointF(Instance.Left + ((float)Instance.Width / 2), Instance.Top + ((float)Instance.Height / 2)), MatrixOrder.Append);
                 if(fallingRotation < 35 && fallingRotation != 0 && Active)
-                    fallingRotation += (float)0.5;
+                    fallingRotation += (float)0.7;
             }
             p.Transform = matrix;
             p.FillRectangle(new SolidBrush(Color.DarkCyan), Instance);
