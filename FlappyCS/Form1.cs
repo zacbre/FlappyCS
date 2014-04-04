@@ -176,7 +176,7 @@ namespace FlappyCS
                 p1.Active = true;
                 paused = false;
             }
-            else if (e.KeyCode == Keys.P && p1.Active)
+            else if (e.KeyCode == Keys.P && (p1.Active || paused))
             {
                 //pause game.
                 p1.Active = !p1.Active;
